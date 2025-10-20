@@ -1,11 +1,13 @@
 """SQLAlchemy data models for query-forwarder."""
 
 import uuid
+from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.sql import func
 
 
 class Base(DeclarativeBase):
@@ -98,3 +100,32 @@ class DomainConfig(Base):
 
     def __repr__(self) -> str:
         return f"<DomainConfig(domain_id={self.domain_id}, api_endpoint={self.api_endpoint})>"
+
+
+class APILog(Base):
+    """Log entry for API requests and responses."""
+
+    __tablename__ = "api_log"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    domain_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("domain.id"), nullable=False, index=True
+    )
+    timestamp: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    query_result: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    query_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    request_method: Mapped[str] = mapped_column(String(10), nullable=False)
+    request_url: Mapped[str] = mapped_column(String(255), nullable=False)
+    request_headers: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    request_body: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    response_status_code: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    response_headers: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    response_body: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    response_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    domain: Mapped["Domain"] = relationship("Domain")
+
+    def __repr__(self) -> str:
+        return f"<APILog(id={self.id}, domain_id={self.domain_id}, timestamp={self.timestamp})>"
