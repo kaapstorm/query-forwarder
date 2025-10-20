@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}API Logs - Query Forwarder{% endblock %}
+
+{% block content %}
+<div x-data="logList()">
+    <h1 class="mb-4">API Logs</h1>
+
+    <div class="mb-3">
+        <span class="badge" :class="connected ? 'bg-success' : 'bg-danger'">
+            <span x-show="connected">● Live</span>
+            <span x-show="!connected">● Disconnected</span>
+        </span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Timestamp</th>
+                    <th>Request URL</th>
+                    <th>Status Code</th>
+                </tr>
+            </thead>
+            <tbody>
+                <template x-for="log in logs" :key="log.id">
+                    <tr @click="window.location.href = `/log/${log.id}`"
+                        style="cursor: pointer;"
+                        class="log-row"
+                        :class="{ 'table-success': log.isNew }">
+                        <td x-text="log.id"></td>
+                        <td x-text="formatTimestamp(log.timestamp)"></td>
+                        <td x-text="log.request_url"></td>
+                        <td>
+                            <span class="badge"
+                                  :class="getStatusClass(log.response_status_code)"
+                                  x-text="log.response_status_code || 'N/A'">
+                            </span>
+                        </td>
+                    </tr>
+                </template>
+                <template x-if="logs.length === 0">
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">No logs yet</td>
+                    </tr>
+                </template>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function logList() {
+    return {
+        logs: {{ logs | tojson }}.map(log => ({
+            id: log.id,
+            timestamp: log.timestamp,
+            request_url: log.request_url,
+            response_status_code: log.response_status_code,
+            isNew: false
+        })),
+        connected: false,
+        ws: null,
+
+        init() {
+            this.connectWebSocket();
+        },
+
+        connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/logs`;
+
+            this.ws = new WebSocket(wsUrl);
+
+            this.ws.onopen = () => {
+                console.log('WebSocket connected');
+                this.connected = true;
+            };
+
+            this.ws.onmessage = (event) => {
+                const newLog = JSON.parse(event.data);
+                newLog.isNew = true;
+
+                this.logs.unshift(newLog);
+
+                if (this.logs.length > 100) {
+                    this.logs.pop();
+                }
+
+                setTimeout(() => {
+                    const log = this.logs.find(l => l.id === newLog.id);
+                    if (log) {
+                        log.isNew = false;
+                    }
+                }, 2000);
+            };
+
+            this.ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                this.connected = false;
+            };
+
+            this.ws.onclose = () => {
+                console.log('WebSocket disconnected');
+                this.connected = false;
+
+                setTimeout(() => {
+                    console.log('Attempting to reconnect...');
+                    this.connectWebSocket();
+                }, 3000);
+            };
+        },
+
+        formatTimestamp(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleString();
+        },
+
+        getStatusClass(statusCode) {
+            if (!statusCode) return 'bg-secondary';
+            if (statusCode >= 200 && statusCode < 300) return 'bg-success';
+            if (statusCode >= 300 && statusCode < 400) return 'bg-info';
+            if (statusCode >= 400 && statusCode < 500) return 'bg-warning';
+            if (statusCode >= 500) return 'bg-danger';
+            return 'bg-secondary';
+        }
+    };
+}
+</script>
+
+<style>
+.log-row {
+    transition: background-color 0.3s ease;
+}
+
+.table-success {
+    animation: highlight 2s ease-out;
+}
+
+@keyframes highlight {
+    0% {
+        background-color: #d4edda;
+    }
+    100% {
+        background-color: transparent;
+    }
+}
+</style>
+{% endblock %}

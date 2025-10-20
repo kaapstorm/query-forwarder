@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Log #{{ log.id }} - Query Forwarder{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <a href="/" class="btn btn-secondary">&larr; Back to List</a>
+</div>
+
+<h1 class="mb-4">API Log Details #{{ log.id }}</h1>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">General Information</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr>
+                        <th>ID:</th>
+                        <td>{{ log.id }}</td>
+                    </tr>
+                    <tr>
+                        <th>Domain ID:</th>
+                        <td>{{ log.domain_id }}</td>
+                    </tr>
+                    <tr>
+                        <th>Timestamp:</th>
+                        <td>{{ log.timestamp }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Query</h5>
+            </div>
+            <div class="card-body">
+                {% if log.query_result %}
+                    <h6>Result:</h6>
+                    <pre class="bg-light p-3 rounded" style="max-height: 300px; overflow-y: auto;">{{ log.query_result }}</pre>
+                {% endif %}
+                {% if log.query_error %}
+                    <div class="alert alert-danger">
+                        <strong>Error:</strong> {{ log.query_error }}
+                    </div>
+                {% endif %}
+                {% if not log.query_result and not log.query_error %}
+                    <p class="text-muted">No query data</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0">HTTP Request</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr>
+                        <th>Method:</th>
+                        <td><span class="badge bg-primary">{{ log.request_method }}</span></td>
+                    </tr>
+                    <tr>
+                        <th>URL:</th>
+                        <td><code>{{ log.request_url }}</code></td>
+                    </tr>
+                </table>
+
+                {% if log.request_headers %}
+                    <h6 class="mt-3">Headers:</h6>
+                    <pre class="bg-light p-3 rounded" style="max-height: 200px; overflow-y: auto;">{{ log.request_headers }}</pre>
+                {% endif %}
+
+                {% if log.request_body %}
+                    <h6 class="mt-3">Body:</h6>
+                    <pre class="bg-light p-3 rounded" style="max-height: 300px; overflow-y: auto;">{{ log.request_body }}</pre>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">HTTP Response</h5>
+            </div>
+            <div class="card-body">
+                {% if log.response_status_code %}
+                    <table class="table table-sm">
+                        <tr>
+                            <th>Status Code:</th>
+                            <td>
+                                <span class="badge
+                                    {% if log.response_status_code >= 200 and log.response_status_code < 300 %}bg-success
+                                    {% elif log.response_status_code >= 300 and log.response_status_code < 400 %}bg-info
+                                    {% elif log.response_status_code >= 400 and log.response_status_code < 500 %}bg-warning
+                                    {% elif log.response_status_code >= 500 %}bg-danger
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ log.response_status_code }}
+                                </span>
+                            </td>
+                        </tr>
+                    </table>
+
+                    {% if log.response_headers %}
+                        <h6 class="mt-3">Headers:</h6>
+                        <pre class="bg-light p-3 rounded" style="max-height: 200px; overflow-y: auto;">{{ log.response_headers }}</pre>
+                    {% endif %}
+
+                    {% if log.response_body %}
+                        <h6 class="mt-3">Body:</h6>
+                        <pre class="bg-light p-3 rounded" style="max-height: 300px; overflow-y: auto;">{{ log.response_body }}</pre>
+                    {% endif %}
+                {% endif %}
+
+                {% if log.response_error %}
+                    <div class="alert alert-danger">
+                        <strong>Error:</strong> {{ log.response_error }}
+                    </div>
+                {% endif %}
+
+                {% if not log.response_status_code and not log.response_error %}
+                    <p class="text-muted">No response data</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
