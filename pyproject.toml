@@ -11,6 +11,7 @@ dependencies = [
     "alembic>=1.13.0",
     "psycopg2-binary>=2.9.9",
     "cryptography>=42.0.0",
+    "httpx>=0.27.0",
 ]
 
 [project.optional-dependencies]

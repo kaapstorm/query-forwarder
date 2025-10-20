@@ -76,3 +76,15 @@ Valid values for `DomainConfig.api_request_type` are 'post' and 'put'.
 (Advanced Encryption Standard with 256-bit keys in Galois/Counter Mode).
 The password is encrypted using a secret key that is unique to the
 instance of the **query-forwarder** web app.
+
+
+Command Line Interface
+----------------------
+
+Forwarding a query result to an API endpoint can be done using the
+`forward.py` command line tool. Usage:
+
+```shell
+$ cd query_forwarder
+$ ./forward.py <domain_name>
+```
