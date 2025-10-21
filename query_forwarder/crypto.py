@@ -79,3 +79,27 @@ class EncryptionService:
             associated_data=None
         )
         return plaintext_bytes.decode('utf-8')
+
+
+def get_encryption_service() -> EncryptionService:
+    """Get encryption service with key from environment variable.
+
+    Returns:
+        EncryptionService instance
+
+    Raises:
+        ValueError: If ENCRYPTION_KEY environment variable is not set
+    """
+    encryption_key_hex = os.getenv("ENCRYPTION_KEY")
+    if not encryption_key_hex:
+        raise ValueError(
+            "ENCRYPTION_KEY environment variable is not set. "
+            "Generate one with: python -c \"from query_forwarder.crypto import "
+            "EncryptionService; print(EncryptionService.generate_key().hex())\""
+        )
+    try:
+        encryption_key = bytes.fromhex(encryption_key_hex)
+    except ValueError as e:
+        raise ValueError(f"Invalid ENCRYPTION_KEY format (must be hex): {e}")
+
+    return EncryptionService(secret_key=encryption_key)

@@ -19,7 +19,18 @@ async def index():
             select(APILog).order_by(APILog.timestamp.desc()).limit(100)
         )
         logs = result.scalars().all()
-    return await render_template("index.html", logs=logs)
+
+    logs_data = [
+        {
+            "id": log.id,
+            "timestamp": log.timestamp.isoformat(),
+            "request_url": log.request_url,
+            "response_status_code": log.response_status_code,
+        }
+        for log in logs
+    ]
+
+    return await render_template("index.html", logs=logs_data)
 
 
 @app.route("/log/<int:log_id>")

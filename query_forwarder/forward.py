@@ -4,14 +4,13 @@ import asyncio
 import base64
 import json
 import sys
-from typing import Any
 
 import httpx
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from query_forwarder.crypto import EncryptionService
-from query_forwarder.database import get_database_url, get_session
+from query_forwarder.crypto import EncryptionService, get_encryption_service
+from query_forwarder.database import get_session
 from query_forwarder.models import APILog, Domain, DomainConfig
 
 
@@ -28,7 +27,7 @@ async def execute_query(db_uri: str, query: str) -> tuple[str | None, str | None
     try:
         engine = create_async_engine(db_uri)
         async with engine.connect() as conn:
-            result = await conn.execute(query)
+            result = await conn.execute(text(query))
             rows = result.fetchall()
             if rows:
                 data = [dict(row._mapping) for row in rows]
@@ -117,8 +116,11 @@ async def forward_query(domain_name: str) -> None:
             )
             sys.exit(1)
 
-        encryption_key = EncryptionService.generate_key()
-        encryption_service = EncryptionService(secret_key=encryption_key)
+        try:
+            encryption_service = get_encryption_service()
+        except ValueError as err:
+            print(f"Error: {err}", file=sys.stderr)
+            sys.exit(1)
 
         print(f"Executing query for domain '{domain_name}'...")
         query_result, query_error = await execute_query(config.db_uri, config.db_query)
